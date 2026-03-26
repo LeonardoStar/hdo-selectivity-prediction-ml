@@ -1,0 +1,77 @@
+import os
+import pandas as pd
+import logging
+
+# ESTRUTURA DE PASTAS
+
+os.makedirs("data/raw", exist_ok=True)
+os.makedirs("data/processed", exist_ok=True)
+os.makedirs("logs", exist_ok=True)
+
+
+# CONFIGURAR O LOG
+logging.basicConfig(
+    filename="logs/pipeline.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# DADOS
+def generate_data():
+    data = {
+        "date": ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04"],
+        "product": ["A", "B", "C", "A"],
+        "category": ["Eletronics", "Eletronics", "Furniture", "Eletronics"],
+        "price": [100, 200, None, 150],
+        "quantity": [2, 1, 1, 3]
+    }
+    df = pd.DataFrame(data)
+    df.to_csv("data/raw/sales_data.csv", index=False)
+    logging.info("Dados gerados com sucesso")
+
+# EXTRACT
+def extract_data(path):
+    logging.info("Extraindo dados")
+    return pd.read_csv(path)
+
+# TRANSFORM
+def transform_data(df):
+    logging.info("Transformando dados")
+
+    # Remover valores nulos
+    df = df.dropna()
+
+    # Converter tipos
+    df["date"] = pd.to_datetime(df["date"])
+
+    # Criar nova variável (feature engineering)
+    df["revenue"] = df["price"] * df["quantity"]
+
+    # Agregação (nível mais avançado)
+    summary = df.groupby("category")["revenue"].sum().reset_index()
+
+    logging.info("Transformação concluída")
+    return df, summary
+
+# LOAD
+def load_data(df, summary):
+    logging.info("Carregando dados")
+
+    df.to_csv("data/processed/clean_data.csv", index=False)
+    summary.to_csv("data/processed/summary.csv", index=False)
+
+    logging.info("Dados salvos com sucesso")
+
+# PIPELINE
+def run_pipeline():
+    logging.info("Pipeline iniciado")
+
+    generate_data()
+
+    df = extract_data("data/raw/sales_data.csv")
+
+    df_clean, summary = transform_data(df)
+
+    load_data(df_clean, summary)
+
+    logging.info("Pipeline finalizado com sucesso")
